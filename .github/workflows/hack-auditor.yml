@@ -31,3 +31,4 @@ jobs:
           provider: anthropic
           model: claude-opus-4-6
           fail-on: none
+          scan-path: app/Http/Controllers
