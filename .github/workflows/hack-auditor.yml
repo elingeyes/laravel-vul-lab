@@ -25,10 +25,17 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist
 
-      - uses: mahdi-salmanzade/laravel-hack-auditor-action@v1
-        with:
-          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          provider: anthropic
-          model: claude-opus-4-6
-          fail-on: none
-          scan-path: app/Http/Controllers
+      - run: composer require mahdisphp/laravel-hack-auditor --dev --no-interaction
+
+      - name: Setup environment
+        run: cp .env.example .env && php artisan key:generate && php artisan migrate --force
+
+      - name: Run Hack Auditor
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HACK_AUDITOR_AI_PROVIDER: anthropic
+          HACK_AUDITOR_AI_MODEL: claude-opus-4-6
+        run: php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php | tee results.json
+
+      - name: Show results
+        run: cat results.json | jq .
