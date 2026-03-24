@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class VulnController extends Controller
 {
-    public function home(): \Illuminate\View\View
+    public function home(): \Illuminate\Contracts\View\View
     {
         return view('home');
     }
@@ -18,7 +18,7 @@ class VulnController extends Controller
     // 1. SQL Injection
     // =========================================================================
 
-    public function sqli(Request $request): \Illuminate\View\View
+    public function sqli(Request $request): \Illuminate\Contracts\View\View
     {
         $results = [];
         $query = $request->input('q', '');
@@ -36,7 +36,7 @@ class VulnController extends Controller
     // 2. Cross-Site Scripting (XSS)
     // =========================================================================
 
-    public function xss(Request $request): \Illuminate\View\View
+    public function xss(Request $request): \Illuminate\Contracts\View\View
     {
         if ($request->isMethod('post')) {
             DB::table('comments')->insert([
@@ -56,7 +56,7 @@ class VulnController extends Controller
     // 3. Broken Authentication
     // =========================================================================
 
-    public function authPage(): \Illuminate\View\View
+    public function authPage(): \Illuminate\Contracts\View\View
     {
         return view('auth-bypass');
     }
@@ -81,14 +81,14 @@ class VulnController extends Controller
     // 4. Insecure Direct Object Reference (IDOR)
     // =========================================================================
 
-    public function idor(): \Illuminate\View\View
+    public function idor(): \Illuminate\Contracts\View\View
     {
         $users = User::select('id', 'name')->get();
 
         return view('idor', compact('users'));
     }
 
-    public function idorProfile(int $id): \Illuminate\View\View
+    public function idorProfile(int $id): \Illuminate\Contracts\View\View
     {
         // VULNERABILITY: IDOR — no authorization check. Any visitor can view
         // any user's profile by changing the ID in the URL.
@@ -101,7 +101,7 @@ class VulnController extends Controller
     // 5. Command Injection
     // =========================================================================
 
-    public function cmdi(Request $request): \Illuminate\View\View
+    public function cmdi(Request $request): \Illuminate\Contracts\View\View
     {
         $output = '';
         $host = $request->input('host', '');
@@ -119,7 +119,7 @@ class VulnController extends Controller
     // 6. Mass Assignment
     // =========================================================================
 
-    public function massAssignment(): \Illuminate\View\View
+    public function massAssignment(): \Illuminate\Contracts\View\View
     {
         $users = User::select('id', 'name', 'email', 'is_admin')->get();
 
@@ -140,7 +140,7 @@ class VulnController extends Controller
     // 7. Sensitive Data Exposure
     // =========================================================================
 
-    public function debug(): \Illuminate\View\View
+    public function debug(): \Illuminate\Contracts\View\View
     {
         // VULNERABILITY: Sensitive Data Exposure — dumps all config values
         // including database credentials, API keys, and app secrets.
@@ -160,7 +160,7 @@ class VulnController extends Controller
     // 8. Broken Access Control
     // =========================================================================
 
-    public function admin(): \Illuminate\View\View
+    public function admin(): \Illuminate\Contracts\View\View
     {
         // VULNERABILITY: Broken Access Control — this route has no auth middleware.
         // The middleware was commented out in routes/web.php.
