@@ -31,9 +31,9 @@ Open http://localhost:8000 — no Docker, no external database. SQLite is used b
 | 3 | Broken Authentication | `/auth` | A07:2021 | Critical | Manual review, Hack Auditor |
 | 4 | IDOR | `/profile/{id}` | A01:2021 | High | Manual review, Hack Auditor |
 | 5 | Command Injection | `/cmdi` | A03:2021 | Critical | Psalm taint, Hack Auditor |
-| 6 | Mass Assignment | `/mass-assignment` | A04:2021 | High | Enlightn, Hack Auditor |
-| 7 | Sensitive Data Exposure | `/debug`, `/phpinfo` | A02:2021 | High | Enlightn, Hack Auditor |
-| 8 | Broken Access Control | `/admin` | A01:2021 | High | Enlightn, Hack Auditor |
+| 6 | Mass Assignment | `/mass-assignment` | A04:2021 | High | Manual review, Hack Auditor |
+| 7 | Sensitive Data Exposure | `/debug`, `/phpinfo` | A02:2021 | High | Manual review, Hack Auditor |
+| 8 | Broken Access Control | `/admin` | A01:2021 | High | Manual review, Hack Auditor |
 
 Each page includes a description of the vulnerability, the vulnerable code, and example payloads to test with.
 
@@ -41,18 +41,19 @@ Each page includes a description of the vulnerability, the vulnerable code, and 
 
 This is the real value of the repo — seeing which tools find which classes of vulnerability.
 
-| Vulnerability | Psalm Taint | PHPStan | Enlightn | Hack Auditor | Manual |
-|---|:---:|:---:|:---:|:---:|:---:|
-| SQL Injection | :white_check_mark: | | | :white_check_mark: | :white_check_mark: |
-| Stored XSS | :white_check_mark: | | | :white_check_mark: | :white_check_mark: |
-| Command Injection | :white_check_mark: | | | :white_check_mark: | :white_check_mark: |
-| Broken Authentication | | | | :white_check_mark: | :white_check_mark: |
-| IDOR | | | | :white_check_mark: | :white_check_mark: |
-| Mass Assignment | | | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| Sensitive Data Exposure | | | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| Broken Access Control | | | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Vulnerability | Psalm Taint | PHPStan | Security Checker | Pint | Hack Auditor | Manual |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| SQL Injection | :white_check_mark: | | | | :white_check_mark: | :white_check_mark: |
+| Stored XSS | :white_check_mark: | | | | :white_check_mark: | :white_check_mark: |
+| Command Injection | :white_check_mark: | | | | :white_check_mark: | :white_check_mark: |
+| Broken Authentication | | | | | :white_check_mark: | :white_check_mark: |
+| IDOR | | | | | :white_check_mark: | :white_check_mark: |
+| Mass Assignment | | | | | :white_check_mark: | :white_check_mark: |
+| Sensitive Data Exposure | | | | | :white_check_mark: | :white_check_mark: |
+| Broken Access Control | | | | | :white_check_mark: | :white_check_mark: |
+| Known CVEs in deps | | | :white_check_mark: | | | |
 
-**Key takeaway:** Psalm's taint analysis is excellent at catching data-flow vulnerabilities (SQLi, XSS, command injection) where untrusted input reaches a dangerous sink. But it fundamentally cannot catch logic flaws — broken auth, IDOR, missing middleware — because those aren't taint problems, they're authorization problems. Enlightn catches Laravel-specific misconfigurations but misses injection flaws. AI-powered analysis (Hack Auditor) covers both categories because it reasons about intent, not just data flow.
+**Key takeaway:** Psalm's taint analysis is excellent at catching data-flow vulnerabilities (SQLi, XSS, command injection) where untrusted input reaches a dangerous sink. But it fundamentally cannot catch logic flaws — broken auth, IDOR, missing middleware — because those aren't taint problems, they're authorization problems. PHPStan catches type errors but not security issues. Security Checker only looks at known CVEs in your `composer.lock`. Pint enforces code style, not security. AI-powered analysis (Hack Auditor) covers both taint flows and logic flaws because it reasons about intent, not just data flow.
 
 No single tool catches everything. That's the point.
 
@@ -72,18 +73,26 @@ composer require --dev vimeo/psalm
 vendor/bin/psalm --taint-analysis
 ```
 
-### Enlightn (Laravel-specific)
+### PHP Security Checker (dependency CVEs)
 
 ```bash
-composer require --dev enlightn/enlightn
-php artisan enlightn
+# Checks composer.lock for packages with known vulnerabilities
+curl -sL https://github.com/fabpot/local-php-security-checker/releases/latest/download/local-php-security-checker_darwin_amd64 -o security-checker
+chmod +x security-checker
+./security-checker security:check composer.lock
+```
+
+### Laravel Pint (code style)
+
+```bash
+vendor/bin/pint --test
 ```
 
 ## CI/CD
 
 Two GitHub Actions workflows are included:
 
-- **`sast.yml`** — Runs PHPStan, Psalm taint analysis, and Enlightn on every push and PR. Findings are uploaded as artifacts. Uses `continue-on-error: true` so the full report is always generated.
+- **`sast.yml`** — Runs PHPStan, Psalm taint analysis, PHP Security Checker (dependency CVEs), and Laravel Pint on every push and PR. Findings are uploaded as artifacts. Uses `continue-on-error: true` so the full report is always generated.
 - **`deploy.yml`** — Full build pipeline: installs deps, runs migrations with seed, executes baseline test, posts a vulnerability summary.
 
 ## Project structure
