@@ -35,7 +35,17 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           HACK_AUDITOR_AI_PROVIDER: anthropic
           HACK_AUDITOR_AI_MODEL: claude-opus-4-6
-        run: php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php > .hack-auditor-results.json || true
+        continue-on-error: true
+        run: |
+          php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php 2>&1 | tee .hack-auditor-results.json
+          echo "Exit code: $?"
+
+      - name: Debug results
+        run: |
+          echo "File exists:"
+          ls -la .hack-auditor-results.json
+          echo "Contents:"
+          cat .hack-auditor-results.json
 
       - name: Post PR comment
         uses: actions/github-script@v7
