@@ -169,3 +169,4 @@ class VulnController extends Controller
         return view('admin', compact('users'));
     }
 }
+// hack-auditor test
