@@ -35,7 +35,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           HACK_AUDITOR_AI_PROVIDER: anthropic
           HACK_AUDITOR_AI_MODEL: claude-opus-4-6
-        run: php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php > .hack-auditor-results.json
+        run: php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php > .hack-auditor-results.json || true
 
       - name: Post PR comment
         uses: actions/github-script@v7

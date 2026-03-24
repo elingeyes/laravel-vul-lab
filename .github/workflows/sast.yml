@@ -34,14 +34,25 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
-      # PHPStan — catches type errors and some unsafe patterns
-      - name: Install PHPStan
-        run: composer require --dev phpstan/phpstan --no-interaction
+      # PHPStan + Larastan — catches type errors and understands Eloquent magic
+      - name: Install PHPStan and Larastan
+        run: composer require --dev phpstan/phpstan larastan/larastan --no-interaction
+
+      - name: Configure PHPStan
+        run: |
+          cat > phpstan.neon << 'EOF'
+          includes:
+              - vendor/larastan/larastan/extension.neon
+          parameters:
+              level: 5
+              paths:
+                  - app/
+          EOF
 
       - name: Run PHPStan
         continue-on-error: true
         run: |
-          vendor/bin/phpstan analyse app/ --level=5 --no-progress --error-format=table 2>&1 | tee phpstan-results.txt
+          vendor/bin/phpstan analyse --no-progress --error-format=table 2>&1 | tee phpstan-results.txt
 
       # Psalm — taint analysis catches SQL injection, XSS, command injection
       - name: Install Psalm
