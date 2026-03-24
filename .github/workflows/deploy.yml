@@ -1,0 +1,71 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build & Test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, sqlite3, xml, curl
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Copy environment
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run migrations with seed
+        run: php artisan migrate --seed --force
+
+      - name: Install dev dependencies for tests
+        run: composer install --no-interaction
+
+      - name: Run baseline test
+        run: php artisan test --filter=ExampleTest
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Application Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **PHP:** $(php -v | head -1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Laravel:** $(php artisan --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database:** SQLite" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Intentional Vulnerabilities Present" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| # | Vulnerability | Route | Severity |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|--------------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1 | SQL Injection | \`/sqli\` | Critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2 | Stored XSS | \`/xss\` | Critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3 | Broken Authentication | \`/auth\` | Critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| 4 | IDOR | \`/profile/{id}\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 5 | Command Injection | \`/cmdi\` | Critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| 6 | Mass Assignment | \`/mass-assignment\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 7 | Sensitive Data Exposure | \`/debug\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 8 | Broken Access Control | \`/admin\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Warning:** This application is intentionally insecure. Never deploy to a public server." >> $GITHUB_STEP_SUMMARY

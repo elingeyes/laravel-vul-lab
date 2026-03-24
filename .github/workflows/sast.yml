@@ -1,0 +1,114 @@
+name: SAST Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Static Analysis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, sqlite3, xml, curl
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copy environment
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      # PHPStan — catches type errors and some unsafe patterns
+      - name: Install PHPStan
+        run: composer require --dev phpstan/phpstan --no-interaction
+
+      - name: Run PHPStan
+        continue-on-error: true
+        run: |
+          vendor/bin/phpstan analyse app/ --level=5 --no-progress --error-format=table 2>&1 | tee phpstan-results.txt
+
+      # Psalm — taint analysis catches SQL injection, XSS, command injection
+      - name: Install Psalm
+        run: composer require --dev vimeo/psalm --no-interaction
+
+      - name: Initialize Psalm config
+        run: |
+          cat > psalm.xml << 'EOF'
+          <?xml version="1.0"?>
+          <psalm
+              errorLevel="4"
+              resolveFromConfigFile="true"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="https://getpsalm.org/schema/config"
+              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+              findUnusedBaselineEntry="true"
+          >
+              <projectFiles>
+                  <directory name="app" />
+                  <ignoreFiles>
+                      <directory name="vendor" />
+                  </ignoreFiles>
+              </projectFiles>
+          </psalm>
+          EOF
+
+      - name: Run Psalm taint analysis
+        continue-on-error: true
+        run: |
+          vendor/bin/psalm --taint-analysis --no-progress 2>&1 | tee psalm-results.txt
+
+      # Enlightn — Laravel-specific security checks
+      - name: Install Enlightn
+        run: composer require --dev enlightn/enlightn --no-interaction
+
+      - name: Run Enlightn security checks
+        continue-on-error: true
+        run: |
+          php artisan enlightn --ci --details 2>&1 | tee enlightn-results.txt
+
+      # Upload all reports
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            phpstan-results.txt
+            psalm-results.txt
+            enlightn-results.txt
+
+      # Summary
+      - name: Post job summary
+        if: always()
+        run: |
+          echo "## SAST Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This application is **intentionally vulnerable** — findings are expected." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### PHPStan" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -20 phpstan-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Psalm Taint Analysis" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -30 psalm-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Enlightn" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -30 enlightn-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
