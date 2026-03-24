@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
@@ -70,14 +73,19 @@ jobs:
         run: |
           vendor/bin/psalm --taint-analysis --no-progress 2>&1 | tee psalm-results.txt
 
-      # Enlightn — Laravel-specific security checks
-      - name: Install Enlightn
-        run: composer require --dev enlightn/enlightn --no-interaction
-
-      - name: Run Enlightn security checks
+      # Security Checker — known CVEs in dependencies
+      - name: Check for known vulnerable dependencies
         continue-on-error: true
         run: |
-          php artisan enlightn --ci --details 2>&1 | tee enlightn-results.txt
+          curl -sL https://github.com/fabpot/local-php-security-checker/releases/latest/download/local-php-security-checker_linux_amd64 -o security-checker
+          chmod +x security-checker
+          ./security-checker security:check composer.lock 2>&1 | tee security-checker-results.txt
+
+      # Laravel Pint — code quality / style
+      - name: Run Laravel Pint
+        continue-on-error: true
+        run: |
+          vendor/bin/pint --test 2>&1 | tee pint-results.txt
 
       # Upload all reports
       - name: Upload scan results
@@ -88,7 +96,8 @@ jobs:
           path: |
             phpstan-results.txt
             psalm-results.txt
-            enlightn-results.txt
+            security-checker-results.txt
+            pint-results.txt
 
       # Summary
       - name: Post job summary
@@ -108,7 +117,12 @@ jobs:
           tail -30 psalm-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Enlightn" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependency Security Check" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -30 enlightn-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
+          cat security-checker-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Laravel Pint (Code Style)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -20 pint-results.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
