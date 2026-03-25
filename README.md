@@ -90,10 +90,11 @@ vendor/bin/pint --test
 
 ## CI/CD
 
-Two GitHub Actions workflows are included:
+Three GitHub Actions workflows are included:
 
 - **`sast.yml`** — Runs PHPStan, Psalm taint analysis, PHP Security Checker (dependency CVEs), and Laravel Pint on every push and PR. Findings are uploaded as artifacts. Uses `continue-on-error: true` so the full report is always generated.
 - **`deploy.yml`** — Full build pipeline: installs deps, runs migrations with seed, executes baseline test, posts a vulnerability summary.
+- **`hack-auditor.yml`** — Runs AI-powered security scanning on pull requests using [Laravel Hack Auditor](https://github.com/mahdi-salmanzade/laravel-hack-auditor). Posts findings as a PR comment with severity breakdown and fix suggestions.
 
 ## Project structure
 
@@ -105,7 +106,8 @@ laravel-vuln-lab/
 ├── resources/views/                          # Blade templates for each vuln
 ├── database/seeders/VulnLabSeeder.php        # Admin + 5 fake users + comments
 ├── .github/workflows/sast.yml               # SAST scanning pipeline
-└── .github/workflows/deploy.yml             # CI/CD pipeline
+├── .github/workflows/deploy.yml             # CI/CD pipeline
+└── .github/workflows/hack-auditor.yml       # AI security scan on PRs
 ```
 
 ## Requirements
