@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class VulnController extends Controller
 {
@@ -167,6 +168,54 @@ class VulnController extends Controller
         $users = User::all();
 
         return view('admin', compact('users'));
+    }
+
+    // =========================================================================
+    // 9. Server-Side Request Forgery (SSRF)
+    // =========================================================================
+
+    public function ssrf(Request $request): \Illuminate\Http\Response
+    {
+        // VULNERABILITY: SSRF — a user-controlled URL is fetched server-side with
+        // no host allowlist, so an attacker can reach internal services or the
+        // cloud metadata endpoint (http://169.254.169.254/...).
+        // Should validate against an allowlist before fetching.
+        $url = $request->input('url');
+
+        $response = Http::get($url);
+
+        return response($response->body());
+    }
+
+    // =========================================================================
+    // 10. Sensitive Data Exposure (API)
+    // =========================================================================
+
+    public function apiProfile(int $id): \Illuminate\Http\JsonResponse
+    {
+        // VULNERABILITY: Sensitive Data Exposure — the password hash, remember
+        // token, and API secret are serialized straight into the JSON response.
+        // Secret fields should never leave the server.
+        $user = User::findOrFail($id);
+
+        return response()->json([
+            'name' => $user->name,
+            'email' => $user->email,
+            'password_hash' => $user->password,
+            'remember_token' => $user->remember_token,
+        ]);
+    }
+
+    // =========================================================================
+    // 11. Open Redirect
+    // =========================================================================
+
+    public function redirectTo(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        // VULNERABILITY: Open Redirect — the destination comes straight from the
+        // request with no domain validation, enabling phishing redirects.
+        // Should validate the target against an allowlist of internal routes.
+        return redirect($request->input('next'));
     }
 }
 // hack-auditor test

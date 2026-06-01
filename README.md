@@ -34,6 +34,9 @@ Open http://localhost:8000 — no Docker, no external database. SQLite is used b
 | 6 | Mass Assignment | `/mass-assignment` | A04:2021 | High | Manual review, Hack Auditor |
 | 7 | Sensitive Data Exposure | `/debug`, `/phpinfo` | A02:2021 | High | Manual review, Hack Auditor |
 | 8 | Broken Access Control | `/admin` | A01:2021 | High | Manual review, Hack Auditor |
+| 9 | SSRF | `/ssrf` | A10:2021 | High | Manual review, Hack Auditor |
+| 10 | Sensitive Data Exposure (API) | `/api/profile/{id}` | A02:2021 | High | Manual review, Hack Auditor |
+| 11 | Open Redirect | `/redirect` | A01:2021 | Medium | Manual review, Hack Auditor |
 
 Each page includes a description of the vulnerability, the vulnerable code, and example payloads to test with.
 

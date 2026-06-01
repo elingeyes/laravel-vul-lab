@@ -36,3 +36,12 @@ Route::get('/phpinfo', [VulnController::class, 'phpinfo']);
 Route::get('/admin', [VulnController::class, 'admin'])
     // ->middleware('auth')
     ->name('admin');
+
+// 9. SSRF
+Route::get('/ssrf', [VulnController::class, 'ssrf']);
+
+// 10. Sensitive Data Exposure (API)
+Route::get('/api/profile/{id}', [VulnController::class, 'apiProfile']);
+
+// 11. Open Redirect
+Route::get('/redirect', [VulnController::class, 'redirectTo']);
