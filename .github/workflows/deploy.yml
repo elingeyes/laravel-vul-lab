@@ -67,5 +67,14 @@ jobs:
           echo "| 6 | Mass Assignment | \`/mass-assignment\` | High |" >> $GITHUB_STEP_SUMMARY
           echo "| 7 | Sensitive Data Exposure | \`/debug\` | High |" >> $GITHUB_STEP_SUMMARY
           echo "| 8 | Broken Access Control | \`/admin\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 9 | SSRF | \`/ssrf\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 10 | Sensitive Data Exposure (API) | \`/api/profile/{id}\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 11 | Open Redirect | \`/redirect\` | Medium |" >> $GITHUB_STEP_SUMMARY
+          echo "| 12 | Broken Access Control (Policy Not Applied) | \`/posts\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 13 | Dynamic Column Injection | \`/sort\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 14 | CORS Misconfiguration | \`/cors\` | Medium |" >> $GITHUB_STEP_SUMMARY
+          echo "| 15 | Insecure Cookie Configuration | \`/insecure-cookie\` | Medium |" >> $GITHUB_STEP_SUMMARY
+          echo "| 16 | Unverified Webhook Signature | \`/webhook\` | High |" >> $GITHUB_STEP_SUMMARY
+          echo "| 17 | Debug Mode Exposure | \`/force-debug\` | High |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> **Warning:** This application is intentionally insecure. Never deploy to a public server." >> $GITHUB_STEP_SUMMARY

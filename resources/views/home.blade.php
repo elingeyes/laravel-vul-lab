@@ -78,6 +78,69 @@
                 <td>A01:2021</td>
                 <td><code>/admin</code></td>
             </tr>
+            <tr>
+                <td>9</td>
+                <td><a href="/ssrf?url=https://example.com">SSRF</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A10:2021</td>
+                <td><code>/ssrf?url=</code></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td><a href="/api/profile/1">Sensitive Data Exposure (API)</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A02:2021</td>
+                <td><code>/api/profile/{id}</code></td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td><a href="/redirect?next=/">Open Redirect</a></td>
+                <td><span class="badge badge-medium">MEDIUM</span></td>
+                <td>A01:2021</td>
+                <td><code>/redirect?next=</code></td>
+            </tr>
+            <tr>
+                <td>12</td>
+                <td><a href="/posts">Broken Access Control (Policy Not Applied)</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A01:2021</td>
+                <td><code>/posts</code></td>
+            </tr>
+            <tr>
+                <td>13</td>
+                <td><a href="/sort">Dynamic Column Injection</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A03:2021</td>
+                <td><code>/sort</code></td>
+            </tr>
+            <tr>
+                <td>14</td>
+                <td><a href="/cors">CORS Misconfiguration</a></td>
+                <td><span class="badge badge-medium">MEDIUM</span></td>
+                <td>A05:2021</td>
+                <td><code>/cors</code></td>
+            </tr>
+            <tr>
+                <td>15</td>
+                <td><a href="/insecure-cookie">Insecure Cookie Configuration</a></td>
+                <td><span class="badge badge-medium">MEDIUM</span></td>
+                <td>A05:2021</td>
+                <td><code>/insecure-cookie</code></td>
+            </tr>
+            <tr>
+                <td>16</td>
+                <td><a href="/webhook">Unverified Webhook Signature</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A08:2021</td>
+                <td><code>/webhook</code></td>
+            </tr>
+            <tr>
+                <td>17</td>
+                <td><a href="/force-debug">Debug Mode Exposure</a></td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td>A05:2021</td>
+                <td><code>/force-debug</code></td>
+            </tr>
         </tbody>
     </table>
 

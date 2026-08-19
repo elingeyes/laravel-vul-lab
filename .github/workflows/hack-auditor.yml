@@ -23,75 +23,46 @@ jobs:
         with:
           php-version: '8.4'
 
+      # composer.json pins mahdisphp/laravel-hack-auditor ^2.0, so this installs
+      # the scanner too — no separate `composer require` step is needed.
       - run: composer install --no-interaction --prefer-dist
-
-      - run: composer require mahdisphp/laravel-hack-auditor --dev --no-interaction
 
       - name: Setup environment
         run: cp .env.example .env && php artisan key:generate && php artisan migrate --force
 
+      # Scope of this scan, precisely:
+      #
+      # The action always runs `hack:scan --json --diff`, so the AI pass sees the
+      # PHP files CHANGED IN THIS PR against the base branch, intersected with the
+      # configured scan paths (app/Http/Controllers, app/Models, app/Http/Requests,
+      # app/Http/Middleware, routes). It is NOT a full-tree scan: no scan-path input
+      # is set, so nothing is narrowed further than that, but a PR that touches no
+      # PHP in those paths legitimately reports a clean score — that is the diff
+      # scope talking, not a verdict on this repo, which is vulnerable by design.
+      #
+      # app/Policies is deliberately absent from the list above. It is not fed to
+      # the AI pass; it is read as context by the DETERMINISTIC policy/route-mismatch
+      # detector, which is how "policy defined but never applied" gets caught
+      # reproducibly rather than by chance.
+      #
+      # Requires action v2.0.0 or newer: it consumes the v2 JSON contract and the
+      # v1 tags do not emit it. GitHub resolves this ref during job setup, before
+      # any step runs, so the tag must exist or the whole workflow errors out.
       - name: Run Hack Auditor
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          HACK_AUDITOR_AI_PROVIDER: anthropic
-          HACK_AUDITOR_AI_MODEL: claude-opus-4-6
-        continue-on-error: true
-        run: |
-          php artisan hack:scan --json --force --no-interaction --path=app/Http/Controllers/VulnController.php 2>&1 | tee .hack-auditor-results.json
-          echo "Exit code: $?"
-
-      - name: Debug results
-        run: |
-          echo "File exists:"
-          ls -la .hack-auditor-results.json
-          echo "Contents:"
-          cat .hack-auditor-results.json
-
-      - name: Post PR comment
-        uses: actions/github-script@v7
+        uses: mahdi-salmanzade/laravel-hack-auditor-action@v2
         with:
-          script: |
-            const fs = require('fs');
-            const results = JSON.parse(fs.readFileSync('.hack-auditor-results.json', 'utf8'));
-            const marker = '<!-- hack-auditor-report -->';
-            const vulns = results.vulnerabilities || [];
-            const score = results.overall_score;
-
-            let body = marker + '\n';
-            if (vulns.length === 0) {
-              body += `## ✅ Hack Auditor Security Report\n\n**No vulnerabilities found** — Score: ${score}/100\n`;
-            } else {
-              body += `## 🔴 Hack Auditor Security Report\n\n`;
-              body += `**Score:** ${score}/100 | **Findings:** ${vulns.length}\n\n`;
-              body += `| Severity | Type | Line |\n|------|------|------|\n`;
-              for (const v of vulns) {
-                const icon = v.severity === 'critical' ? '🔴' : v.severity === 'high' ? '🟠' : v.severity === 'medium' ? '🟡' : '🔵';
-                body += `| ${icon} ${v.severity_label} | ${v.type_label} | L${v.line} |\n`;
-              }
-              body += '\n';
-              for (const v of vulns) {
-                body += `<details><summary><strong>${v.severity_label}: ${v.type_label}</strong> (L${v.line})</summary>\n\n`;
-                body += `**OWASP:** ${v.owasp}\n\n${v.description}\n\n`;
-                if (v.fix) body += `**Fix:**\n\`\`\`php\n${v.fix}\n\`\`\`\n`;
-                body += `</details>\n\n`;
-              }
-            }
-            body += `\n---\n🔒 Scanned by [Laravel Hack Auditor](https://github.com/mahdi-salmanzade/laravel-hack-auditor)`;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-            const existing = comments.find(c => c.body && c.body.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                comment_id: existing.id, body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, body
-              });
-            }
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          provider: anthropic
+          model: claude-opus-5
+          install-package: 'false'
+          # Findings are informational — every one of them is intentional here, so
+          # no severity threshold should ever redden the check.
+          fail-on: none
+          # A BROKEN scan is different from a scan with findings, and must be loud.
+          # fail-on-error defaults to 'true'; it is spelled out because this job
+          # previously carried `continue-on-error: true`, which — with fail-on
+          # already at none — masked nothing except a scan that failed to run
+          # (bad API key, unbootable app, non-JSON output) and reported it green.
+          # This repo exists to prove the scanner works; a silent no-op is the one
+          # outcome worth failing on.
+          fail-on-error: 'true'

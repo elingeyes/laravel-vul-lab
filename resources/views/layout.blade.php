@@ -81,6 +81,15 @@
             <a href="/mass-assignment" class="{{ request()->is('mass-assignment') ? 'active' : '' }}">Mass Assignment <span class="badge badge-high">HIGH</span></a>
             <a href="/debug" class="{{ request()->is('debug') ? 'active' : '' }}">Data Exposure <span class="badge badge-high">HIGH</span></a>
             <a href="/admin" class="{{ request()->is('admin') ? 'active' : '' }}">Broken Access Ctrl <span class="badge badge-high">HIGH</span></a>
+            <a href="/ssrf?url=https://example.com" class="{{ request()->is('ssrf') ? 'active' : '' }}">SSRF <span class="badge badge-high">HIGH</span></a>
+            <a href="/api/profile/1" class="{{ request()->is('api/profile*') ? 'active' : '' }}">Data Exposure (API) <span class="badge badge-high">HIGH</span></a>
+            <a href="/redirect?next=/" class="{{ request()->is('redirect') ? 'active' : '' }}">Open Redirect <span class="badge badge-medium">MED</span></a>
+            <a href="/posts" class="{{ request()->is('posts*') ? 'active' : '' }}">Policy Not Applied <span class="badge badge-high">HIGH</span></a>
+            <a href="/sort" class="{{ request()->is('sort') ? 'active' : '' }}">Dynamic Column <span class="badge badge-high">HIGH</span></a>
+            <a href="/cors" class="{{ request()->is('cors') ? 'active' : '' }}">CORS Misconfig <span class="badge badge-medium">MED</span></a>
+            <a href="/insecure-cookie" class="{{ request()->is('insecure-cookie') ? 'active' : '' }}">Insecure Cookie <span class="badge badge-medium">MED</span></a>
+            <a href="/webhook" class="{{ request()->is('webhook*') ? 'active' : '' }}">Unverified Webhook <span class="badge badge-high">HIGH</span></a>
+            <a href="/force-debug" class="{{ request()->is('force-debug') ? 'active' : '' }}">Debug Mode <span class="badge badge-high">HIGH</span></a>
         </nav>
     </aside>
 

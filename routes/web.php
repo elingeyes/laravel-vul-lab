@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\VulnController;
+use App\Http\Controllers\WebhookController;
+use App\Http\Middleware\ForceDebugMode;
+use App\Http\Middleware\ReflectOriginCors;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [VulnController::class, 'home']);
@@ -45,3 +49,33 @@ Route::get('/api/profile/{id}', [VulnController::class, 'apiProfile']);
 
 // 11. Open Redirect
 Route::get('/redirect', [VulnController::class, 'redirectTo']);
+
+// 12. Broken Access Control (Policy defined but never applied)
+// VULNERABILITY: App\Policies\PostPolicy defines update() and delete(), but these
+// routes carry no `can:update,post` / `can:delete,post` middleware and the
+// controller never calls authorize(), so the policy is never reached.
+Route::get('/posts', [PostController::class, 'index']);
+Route::post('/posts/{id}', [PostController::class, 'update']);
+Route::post('/posts/{id}/delete', [PostController::class, 'destroy']);
+
+// 13. Dynamic Column Injection
+Route::get('/sort', [VulnController::class, 'sort']);
+
+// 14. CORS Misconfiguration
+// The origin-reflecting middleware is attached here only — it is deliberately not
+// global, so the rest of the lab keeps Laravel's default CORS behaviour.
+Route::get('/cors', [VulnController::class, 'cors'])
+    ->middleware(ReflectOriginCors::class);
+
+// 15. Insecure Cookie Configuration
+Route::get('/insecure-cookie', [VulnController::class, 'insecureCookie']);
+
+// 16. Unverified Webhook Signature
+// Teaching fixture only — not a working integration endpoint. It is wired to no
+// provider and stays inside the `web` group, so CSRF still blocks outside POSTs.
+Route::get('/webhook', [WebhookController::class, 'page']);
+Route::post('/webhook/receive', [WebhookController::class, 'receive']);
+
+// 17. Debug Mode Exposure
+Route::get('/force-debug', [VulnController::class, 'forceDebug'])
+    ->middleware(ForceDebugMode::class);
